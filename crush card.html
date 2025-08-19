@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Secret Place</title>
+    <!-- Use Tailwind CSS for a modern, responsive design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Import romantic and classic fonts from Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Playfair+Display:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Playfair Display', serif; /* A sophisticated serif font for body text */
+            background-color: #fce7f3; /* Soft pink background */
+            transition: background-color 0.5s ease-in-out;
+            touch-action: pan-y; /* Prevents unwanted browser gestures on mobile */
+        }
+        
+        /* Custom styles for the envelope and animations */
+        .envelope-container {
+            width: 80%;
+            max-width: 300px;
+            aspect-ratio: 1.618; /* Golden ratio for aesthetics */
+            position: relative;
+            cursor: pointer;
+            perspective: 1000px; /* For 3D rotation effect */
+        }
+
+        .envelope-flap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background-color: #fca5a5; /* Pink-red */
+            transform-origin: top;
+            transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            z-index: 20;
+            border-radius: 0 0 1rem 1rem;
+        }
+        .envelope-flap.open {
+            transform: rotateX(180deg);
+        }
+
+        .envelope-body {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #be185d; /* Deeper pink */
+            z-index: 10;
+            border-radius: 1rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .envelope-body::before,
+        .envelope-body::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-style: solid;
+        }
+
+        .envelope-body::before {
+            border-width: 0 50% 100% 50%;
+            border-color: transparent transparent #a21535 transparent;
+            top: 0;
+            left: 0;
+            transform: translateY(-99%);
+        }
+
+        .letter {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 85%;
+            height: 85%;
+            background-color: #fff;
+            border-radius: 0.5rem;
+            z-index: 15;
+            transition: transform 1.2s ease-in-out;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+        .letter.slide-out {
+            transform: translate(-50%, -150%) scale(0.9);
+        }
+        
+        /* Keyframe animation for the heart pulse */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .pulse {
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        /* Loading spinner animation */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #be185d;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Modal styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            max-width: 95%;
+            max-height: 95%;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Lightbox styling for full-screen image view */
+        .lightbox-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+        }
+        .lightbox-content {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+
+        /* Fade-in for the main UI */
+        .fade-in {
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+        .fade-in.is-visible {
+            opacity: 1;
+        }
+
+        /* Apply the romantic font to titles and key text */
+        .romantic-font {
+            font-family: 'Dancing Script', cursive;
+        }
+
+        /* Polaroid card styling */
+        .polaroid-card {
+            background-color: #fff;
+            padding: 1rem;
+            padding-bottom: 3.5rem; /* Space for the "Polaroid" white border */
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transform: rotate(var(--angle, 0deg)); /* Dynamic rotation with CSS variable */
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            cursor: pointer;
+            text-align: center;
+            position: relative;
+        }
+        .polaroid-card:hover {
+            transform: scale(1.05) rotate(0deg); /* Straighten and grow on hover */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+        .polaroid-card img {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 0.25rem;
+        }
+        .polaroid-caption {
+            position: absolute;
+            bottom: 1rem;
+            left: 0;
+            right: 0;
+            font-size: 1.125rem; /* Larger font size for better readability */
+            color: #4b5563;
+            font-family: 'Dancing Script', cursive;
+        }
+
+        /* Custom styling for the puzzle game board */
+        .puzzle-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 4px;
+            width: 300px;
+            height: 300px;
+            border: 4px solid #be185d;
+            border-radius: 1rem;
+        }
+        .puzzle-tile {
+            background-size: 300px 300px;
+            background-repeat: no-repeat;
+            cursor: pointer;
+            transition: transform 0.3s ease-in-out;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border-radius: 0.25rem;
+        }
+        .puzzle-tile.empty {
+            background-image: none !important;
+            background-color: #fce7f3;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+            cursor: default;
+        }
+
+        /* Polaroid layout for gallery items */
+        .gallery-polaroid-layout {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+            padding: 1rem;
+        }
+        .gallery-polaroid-item {
+            background-color: #fff;
+            padding: 0.5rem;
+            padding-bottom: 2.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-radius: 0.25rem;
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            cursor: pointer;
+            position: relative;
+            transform: rotate(var(--rotation, 0deg));
+        }
+        .gallery-polaroid-item:hover {
+            transform: scale(1.05) rotate(0deg) !important;
+            z-index: 10;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+        }
+        .gallery-polaroid-item img, .gallery-polaroid-item video {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 0.25rem;
+        }
+        .gallery-polaroid-caption {
+            position: absolute;
+            bottom: 0.75rem;
+            left: 0;
+            right: 0;
+            font-size: 0.875rem;
+            color: #4b5563;
+            text-align: center;
+            font-family: 'Dancing Script', cursive;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 1s ease-out forwards;
+        }
+
+        /* Styles for the realistic keypad buttons */
+        .keypad-btn {
+            box-shadow: 0 6px 0 #d96883, 0 8px 15px rgba(0, 0, 0, 0.2);
+            transform: translateY(0);
+            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+            color: #a21535 !important;
+        }
+        .keypad-btn:active {
+            box-shadow: 0 2px 0 #d96883, 0 5px 10px rgba(0, 0, 0, 0.2);
+            transform: translateY(4px);
+        }
+        
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <!-- Envelope and Letter UI (Initially visible) -->
+    <div id="envelope-ui" class="flex flex-col items-center justify-center h-full w-full absolute inset-0 transition-opacity duration-1000">
+        <!-- Responsive heading with romantic font -->
+        <h1 class="text-4xl sm:text-5xl font-bold text-pink-600 mb-8 z-20 fade-in text-center px-4 romantic-font">A Special Message for You</h1>
+        <div class="envelope-container fade-in">
+            <div id="envelope-body" class="envelope-body"></div>
+            <div id="letter" class="letter"></div>
+            <div id="envelope-flap" class="envelope-flap"></div>
+            
+            <!-- Love Stamp -->
+            <div class="absolute top-4 right-4 p-2 bg-pink-300 rounded-full shadow-md z-30 transform rotate-12">
+                <span class="text-2xl">❤️</span>
+            </div>
+
+            <!-- Name Label -->
+            <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 -rotate-3 text-white font-bold text-xl sm:text-2xl z-30 romantic-font">
+                Batrisyia
+            </div>
+        </div>
+        <p class="text-pink-400 font-semibold mt-8 text-center px-4 fade-in">Tap on the envelope to open it</p>
+    </div>
+
+    <!-- Main container for the heart-shaped UI (Initially hidden) -->
+    <div id="main-ui" class="relative w-11/12 max-w-sm aspect-square hidden fade-in">
+        <!-- Heart SVG background with stroke for the border -->
+        <svg id="heart-shape-svg" class="absolute inset-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path id="heart-path" d="M12 21.35l-1.84-1.66C4.15 14.54 1 11.77 1 8.5a5.5 5.5 0 0111-1.45A5.5 5.5 0 0123 8.5c0 3.27-3.15 6.04-9.16 11.19L12 21.35z"
+                fill="#be185d" stroke="#fff" stroke-width="1.5" class="transition-all duration-500" />
+        </svg>
+
+        <!-- Content placed on top of the heart SVG -->
+        <div class="absolute inset-0 flex flex-col items-center justify-center p-8 text-white">
+            <!-- Passcode UI section -->
+            <div id="passcode-ui" class="flex flex-col items-center w-full">
+                <h1 class="text-3xl sm:text-4xl font-bold mt-2 text-center romantic-font">Enter Passcode</h1>
+                <div id="passcodeDisplay" class="flex justify-center space-x-2 mt-6">
+                    <!-- Passcode input boxes will be dynamically added here -->
+                </div>
+
+                <p id="message" class="text-center mt-4 h-6 font-semibold"></p>
+
+                <!-- Keypad with responsive grid and button sizes -->
+                <div id="keypad" class="grid grid-cols-3 gap-4 mt-8 w-full max-w-xs p-4">
+                    <!-- Number buttons 1-9 -->
+                    <button class="keypad-btn bg-pink-500 font-bold py-4 rounded-lg transition-colors duration-200">1</button>
+                    <button class="keypad-btn bg-pink-500 font-bold py-4 rounded-lg transition-colors duration-200">2</button>
+                    <button class="keypad-btn bg-pink-500 font-bold py-4 rounded-lg transition-colors duration-200">3</button>
+                    <button class="keypad-btn bg-pink-500 font-bold py-4 rounded-lg transition-colors duration-200">4</button>
+                    <button class="keypad-btn bg-pink-500 font-bold py-4 rounded-lg transition-colors duration-200">5</button>
+                    <button class="keypad-btn bg-pink-500 font-bold py-4 rounded-lg transition-colors duration-200">6</button>
+                    <button class="keypad-btn bg-pink-500 font-bold py-4 rounded-lg transition-colors duration-200">7</button>
+                    <button class="keypad-btn bg-pink-500 font-bold py-4 rounded-lg transition-colors duration-200">8</button>
+                    <button class="keypad-btn bg-pink-500 font-bold py-4 rounded-lg transition-colors duration-200">9</button>
+                    <!-- Clear and 0 buttons -->
+                    <button id="clear-btn" class="col-span-1 bg-red-400 text-white keypad-btn font-bold py-4 rounded-lg transition-colors duration-200">Clear</button>
+                    <button class="keypad-btn bg-pink-500 font-bold py-4 rounded-lg transition-colors duration-200">0</button>
+                    <button id="delete-btn" class="col-span-1 bg-gray-400 text-white keypad-btn font-bold py-4 rounded-lg transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 mx-auto">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Private Gallery section (initially hidden) -->
+            <div id="gallery-ui" class="hidden flex flex-col items-center justify-center w-full">
+                <h1 class="text-3xl sm:text-4xl font-bold text-center mb-6 romantic-font">Private Gallery</h1>
+                <div class="flex flex-col space-y-8 w-full">
+                    <div id="folder-smile" class="polaroid-card" style="--angle: -5deg;">
+                        <img src="https://placehold.co/200x200/FFB6C1/FFF?text=😊" alt="Smile of You Folder">
+                        <div class="polaroid-caption">Smile of You 😊</div>
+                    </div>
+                    <div id="folder-our-smile" class="polaroid-card" style="--angle: 3deg;">
+                        <img src="https://placehold.co/200x200/F08080/FFF?text=🥰" alt="Our Smile Folder">
+                        <div class="polaroid-caption">Our Smile 🥰</div>
+                    </div>
+                    <div id="folder-our-future" class="polaroid-card" style="--angle: -7deg;">
+                        <img src="https://placehold.co/200x200/FF69B4/FFF?text=✨" alt="Our Future Folder">
+                        <div class="polaroid-caption">Our Future ✨</div>
+                    </div>
+                    <div id="folder-your-smile" class="polaroid-card" style="--angle: 5deg;">
+                        <img src="https://placehold.co/200x200/40E0D0/FFF?text=😊" alt="Your Smile Folder">
+                        <div class="polaroid-caption">Your Smile 😊</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery pop-up (initially hidden) -->
+    <div id="gallery-modal" class="modal-overlay hidden">
+        <div class="modal-content text-pink-600">
+            <button id="close-modal-btn" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 focus:outline-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <h2 id="modal-title" class="text-2xl sm:text-3xl font-bold mb-4 romantic-font text-center"></h2>
+            <!-- This container will hold the gallery content or the puzzle -->
+            <div id="modal-content-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-2 md:p-4">
+                <!-- Gallery items will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox for full-screen image view (initially hidden) -->
+    <div id="lightbox-modal" class="lightbox-overlay hidden">
+        <button id="close-lightbox-btn" class="absolute top-4 right-4 text-white hover:text-gray-300 focus:outline-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+        <img id="lightbox-image" class="lightbox-content" src="" alt="Full Screen Image">
+    </div>
+
+    <!-- Background audio element -->
+    <audio id="background-audio" loop>
+        <source src="ariana-grande-we-can-t-be-friends-lyrics-128-ytshorts.savetube.me.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Mute/Unmute button -->
+    <button id="audio-toggle-btn" class="fixed bottom-4 left-4 p-3 bg-pink-500 text-white rounded-full shadow-lg transition-colors duration-200 hover:bg-pink-600">
+        <svg id="speaker-on-icon" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 9v6h4l5 5V4l-5 5H3zm13.5 3c0-1.77-1-3.29-2.5-4.03v8.05c1.5-.74 2.5-2.26 2.5-4.02zM15 3.24v.69a6 6 0 010 16.14v.69a7.5 7.5 0 000-17.52z"/>
+        </svg>
+        <svg id="speaker-off-icon" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16.5 12c0-1.77-1-3.29-2.5-4.03v1.54L16.5 12zm2-2.5l-2 2h-2v2l2 2v-1.54a4.99 4.99 0 00-2.5 4.04v.69a6 6 0 010-16.14v.69A7.5 7.5 0 0018.5 9.5zm-8.5-6.5L3 9v6h4l5 5V4l-5 5H3z"/>
+        </svg>
+    </button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get all necessary DOM elements
+            const passcodeUI = document.getElementById('passcode-ui');
+            const galleryUI = document.getElementById('gallery-ui');
+            const passcodeDisplay = document.getElementById('passcodeDisplay');
+            const keypadButtons = document.querySelectorAll('.keypad-btn');
+            const clearButton = document.getElementById('clear-btn');
+            const deleteButton = document.getElementById('delete-btn');
+            const messageEl = document.getElementById('message');
+            const heartPath = document.getElementById('heart-path');
+            const mainUI = document.getElementById('main-ui');
+            const galleryModal = document.getElementById('gallery-modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const modalTitle = document.getElementById('modal-title');
+            const modalContentContainer = document.getElementById('modal-content-container');
+            const folderSmileBtn = document.getElementById('folder-smile');
+            const folderOurSmileBtn = document.getElementById('folder-our-smile');
+            const folderOurFutureBtn = document.getElementById('folder-our-future');
+            const folderYourSmileBtn = document.getElementById('folder-your-smile');
+            const lightboxModal = document.getElementById('lightbox-modal');
+            const lightboxImage = document.getElementById('lightbox-image');
+            const closeLightboxBtn = document.getElementById('close-lightbox-btn');
+            const backgroundAudio = document.getElementById('background-audio');
+            const audioToggleBtn = document.getElementById('audio-toggle-btn');
+            const speakerOnIcon = document.getElementById('speaker-on-icon');
+            const speakerOffIcon = document.getElementById('speaker-off-icon');
+            const envelopeUI = document.getElementById('envelope-ui');
+            const envelopeFlap = document.getElementById('envelope-flap');
+            const letter = document.getElementById('letter');
+            
+            // Set the correct passcode and media data
+            const correctPasscode = "151104";
+            const passcodeLength = correctPasscode.length;
+            let userPasscode = "";
+            let unlocked = false;
+            let isAnimating = false;
+
+            // --- You can edit this section to add your own media content ---
+            const galleryData = {
+                
+                "Our Smile 🥰": [
+                    { type: 'image', url: 'our.jpg' },
+                    { type: 'image', url: 'our2.jpg' },
+                    { type: 'image', url: 'our3.jpg' },
+                    { type: 'image', url: 'our5.jpg' },
+                ],
+                "Our Future ✨": [
+                    { type: 'image', url: 'fu.png' },
+                    { type: 'video', url: 'video_2025-08-19_15-00-40.mp4' },
+                    { type: 'video', url: '22.mp4' },
+
+                ],
+                "Your Smile 😊": [
+                     { type: 'image', url: 'she.jpg' },
+                    { type: 'image', url: 'she2.jpg' },
+                    { type: 'image', url: 'she3.jpg' },
+                    { type: 'image', url: 'she4.jpg' },
+                    { type: 'image', url: 'she5.jpg' },
+                ]
+            };
+            // --- End of customizable section ---
+            
+            // --- Helper function to play audio ---
+            const playAudio = () => {
+                backgroundAudio.play().catch(e => {
+                    console.log("Autoplay was prevented. User interaction is required to play audio.");
+                });
+            };
+            
+            // --- Core functions for app logic ---
+
+            // Dynamically create the passcode input boxes
+            const createPasscodeInputs = () => {
+                for (let i = 0; i < passcodeLength; i++) {
+                    const div = document.createElement('div');
+                    // Responsive sizing for the input boxes
+                    div.className = 'w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 border-2 border-white bg-pink-600 rounded-lg flex items-center justify-center text-white text-xl sm:text-2xl font-bold transition-colors duration-200';
+                    passcodeDisplay.appendChild(div);
+                }
+            };
+            
+            // Update the display with the user's input
+            const updateDisplay = () => {
+                const inputs = passcodeDisplay.children;
+                for (let i = 0; i < inputs.length; i++) {
+                    if (userPasscode[i]) {
+                        inputs[i].textContent = "❤";
+                        inputs[i].classList.add('bg-white', 'text-pink-600');
+                        inputs[i].classList.remove('bg-pink-600', 'text-white');
+                    } else {
+                        inputs[i].textContent = "";
+                        inputs[i].classList.remove('bg-white', 'text-pink-600');
+                        inputs[i].classList.add('bg-pink-600', 'text-white');
+                    }
+                }
+            };
+
+            // Handle button clicks on the keypad
+            const handleInput = (e) => {
+                if (unlocked) return;
+                
+                const value = e.currentTarget.textContent.trim();
+
+                if (!isNaN(parseInt(value))) {
+                    if (userPasscode.length < passcodeLength) {
+                        userPasscode += value;
+                        updateDisplay();
+                        if (userPasscode.length === passcodeLength) {
+                            checkPasscode();
+                        }
+                    }
+                }
+            };
+
+            // Check if the entered passcode is correct
+            const checkPasscode = () => {
+                if (userPasscode === correctPasscode) {
+                    messageEl.textContent = "Padlock Unlocked!";
+                    messageEl.className = "text-center mt-4 text-green-500 font-bold";
+                    heartPath.style.fill = "#10b981"; // Green heart
+                    heartPath.style.stroke = "#fff";
+                    heartPath.classList.add('pulse');
+                    unlocked = true;
+
+                    // Fade out passcode UI and fade in gallery UI
+                    setTimeout(() => {
+                        passcodeUI.classList.add('hidden');
+                        galleryUI.classList.remove('hidden');
+                        galleryUI.classList.add('is-visible');
+                    }, 800);
+
+                } else {
+                    messageEl.textContent = "Incorrect Passcode";
+                    messageEl.className = "text-center mt-4 text-red-500 font-bold";
+                    setTimeout(() => {
+                        userPasscode = "";
+                        updateDisplay();
+                        messageEl.textContent = "";
+                    }, 1000);
+                }
+            };
+            
+            // Function to display gallery content or trigger API call
+            const showGallery = (folderName) => {
+                modalTitle.textContent = folderName;
+                modalContentContainer.innerHTML = '';
+
+                // Get the content from the galleryData object
+                const content = galleryData[folderName];
+
+                // Check if the content for the folder actually exists
+                if (content) {
+                    // Handle standard gallery with romantic layout
+                    modalContentContainer.style.display = 'flex';
+                    modalContentContainer.classList.add('gallery-polaroid-layout');
+                    
+                    content.forEach(item => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'gallery-polaroid-item';
+                        // Apply a random rotation for the scattered effect
+                        const randomRotation = Math.random() * 6 - 3; // a random angle between -3 and 3 degrees
+                        itemDiv.style.setProperty('--rotation', `${randomRotation}deg`);
+                        
+                        const innerContainer = document.createElement('div');
+                        innerContainer.className = 'w-48 h-auto'; // Fixed size for polaroid image
+
+                        if (item.type === 'image') {
+                            const img = document.createElement('img');
+                            img.src = item.url;
+                            img.alt = folderName;
+                            img.className = 'w-full h-auto object-cover rounded';
+                            innerContainer.appendChild(img);
+                            
+                            // Add click listener to open the lightbox
+                            img.addEventListener('click', () => {
+                                lightboxImage.src = item.url;
+                                lightboxModal.classList.remove('hidden');
+                                galleryModal.classList.add('hidden');
+                            });
+
+                        } else if (item.type === 'video') {
+                            const video = document.createElement('video');
+                            video.src = item.url;
+                            video.controls = true;
+                            video.className = 'w-full h-auto object-cover rounded';
+                            innerContainer.appendChild(video);
+                        }
+                        itemDiv.appendChild(innerContainer);
+                        
+                        const caption = document.createElement('div');
+                        caption.className = 'gallery-polaroid-caption';
+                        caption.textContent = `A moment from ${folderName}`;
+                        itemDiv.appendChild(caption);
+
+                        modalContentContainer.appendChild(itemDiv);
+                    });
+                } else {
+                    // Display an error message if the content is not found
+                    modalContentContainer.innerHTML = `
+                        <p class="col-span-2 md:col-span-3 lg:col-span-4 text-center text-red-500 font-bold">
+                            Oops! It looks like there's no content in this folder.
+                        </p>
+                    `;
+                }
+                
+                galleryModal.classList.remove('hidden');
+                mainUI.style.opacity = '0.5';
+            };
+
+            const closeModal = () => {
+                galleryModal.classList.add('hidden');
+                mainUI.style.opacity = '1';
+                const videos = modalContentContainer.querySelectorAll('video');
+                videos.forEach(video => video.pause());
+            };
+            
+            const closeLightbox = () => {
+                lightboxModal.classList.add('hidden');
+                galleryModal.classList.remove('hidden');
+            };
+
+            // Event listener setup
+            envelopeUI.addEventListener('click', () => {
+                if (isAnimating) return;
+                isAnimating = true;
+                playAudio();
+
+                envelopeFlap.classList.add('open');
+                letter.classList.add('slide-out');
+
+                setTimeout(() => {
+                    envelopeUI.style.opacity = '0';
+                    setTimeout(() => {
+                        envelopeUI.classList.add('hidden');
+                        mainUI.classList.remove('hidden');
+                        setTimeout(() => mainUI.classList.add('is-visible'), 50);
+                    }, 1000); // Wait for envelope fade-out
+                }, 800); // Wait for envelope animation to finish
+            });
+
+            keypadButtons.forEach(button => {
+                button.addEventListener('click', handleInput);
+            });
+            clearButton.addEventListener('click', () => {
+                userPasscode = "";
+                updateDisplay();
+                messageEl.textContent = "";
+                heartPath.style.fill = "#be185d";
+                heartPath.style.stroke = "#fff";
+                heartPath.classList.remove('pulse');
+                unlocked = false;
+            });
+            deleteButton.addEventListener('click', () => {
+                if (!unlocked) {
+                    userPasscode = userPasscode.slice(0, -1);
+                    updateDisplay();
+                    messageEl.textContent = "";
+                }
+            });
+
+            folderSmileBtn.addEventListener('click', () => showGallery("Smile of You 😊"));
+            folderOurSmileBtn.addEventListener('click', () => showGallery("Our Smile 🥰"));
+            folderOurFutureBtn.addEventListener('click', () => showGallery("Our Future ✨"));
+            folderYourSmileBtn.addEventListener('click', () => showGallery("Your Smile 😊"));
+            closeModalBtn.addEventListener('click', closeModal);
+            closeLightboxBtn.addEventListener('click', closeLightbox);
+
+            audioToggleBtn.addEventListener('click', () => {
+                if (backgroundAudio.paused) {
+                    backgroundAudio.play();
+                    speakerOnIcon.classList.remove('hidden');
+                    speakerOffIcon.classList.add('hidden');
+                } else {
+                    backgroundAudio.pause();
+                    speakerOnIcon.classList.add('hidden');
+                    speakerOffIcon.classList.remove('hidden');
+                }
+            });
+
+            // Initial setup
+            createPasscodeInputs();
+            updateDisplay();
+            
+            // Trigger the fade-in for the initial UI elements
+            setTimeout(() => {
+                document.querySelectorAll('.fade-in').forEach(el => el.classList.add('is-visible'));
+            }, 100);
+        });
+    </script>
+</body>
+</html>
